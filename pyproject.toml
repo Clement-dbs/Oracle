@@ -1,0 +1,135 @@
+# Configuration outils qualité + dépendances pour Oracle
+#
+# Gère : Ruff (lint + format), Pytest, et la liste des dépendances directes
+# (runtime vs dev) -- source de vérité pour requirements.txt (prod) et
+# requirements-dev.txt (prod + outils de lint/tests/évaluation), voir la
+# note en tête de ces deux fichiers.
+
+# =============================================================================
+# Ruff — linter (et formateur) Python
+# =============================================================================
+# Démarrage pragmatique : on capte les vrais défauts (bugs, imports, anti-patterns,
+# modernisation) sans se battre sur la longueur de ligne (E501 ignoré pour l'instant).
+# Lancement : `ruff check .` / `ruff check --fix .` / `ruff format .`
+# (un hook Claude Code local, non versionné, peut lancer ruff à chaque édition d'un .py)
+
+[project]
+name = "oracle"
+version = "0.1.0"
+requires-python = ">=3.11"
+# Dépendances directes réellement importées par le code servi (app/, hors
+# app/ragchain/evaluation/) -- vérifié par analyse statique des imports, pas
+# recopié à l'aveugle depuis un pip freeze. Les dépendances transitives
+# (numpy, scipy, sympy, jsonpatch, opentelemetry, etc.) ne sont volontairement
+# pas listées ici : elles sont résolues automatiquement à l'installation et
+# épinglées dans requirements.txt.
+dependencies = [
+    "fastapi==0.138.1",
+    "starlette==1.3.1",
+    "uvicorn==0.49.0",
+    "python-multipart==0.0.32",  # requis par fastapi pour File(...)/UploadFile, jamais importé directement
+    "jinja2==3.1.6",              # requis par fastapi.templating.Jinja2Templates (factory.py)
+    "flagembedding==1.4.0",
+    "sentence-transformers==5.6.0",
+    "torch==2.12.1",
+    "transformers==5.12.1",
+    "qdrant-client==1.18.0",
+    "langchain-core==1.4.9",
+    "langchain-ollama==1.1.0",
+    "langchain-text-splitters==1.1.2",
+    "redis==8.0.1",
+    "minio==7.2.20",
+    "google-api-python-client==2.198.0",
+    "google-auth==2.55.1",
+    "google-auth-httplib2==0.4.0",
+    "liteparse==2.11.0",
+    "python-dotenv==1.2.2",
+    "pydantic==2.13.4",
+    "pydantic-settings==2.14.2",
+    "requests==2.34.2",
+    "cryptography==49.0.0",
+]
+
+# =============================================================================
+# Dépendances dev (PEP 735) -- lint/tests + script ponctuel regenerate_token.py,
+# jamais nécessaires pour servir l'app en prod.
+# =============================================================================
+[dependency-groups]
+dev = [
+    "ruff==0.15.20",
+    "vulture==2.16",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "pytest-repeat==0.9.4",
+    "pytest-rerunfailures==16.4",
+    "pytest-xdist==3.8.0",
+    # Tests uniquement : génération de fixtures factices dans conftest.py
+    # (PDF/DOCX/PPTX/XLSX/images), jamais importés par app/.
+    "pymupdf==1.28.0",
+    "python-docx==1.1.2",
+    "python-pptx==1.0.2",
+    "openpyxl==3.1.5",
+    "pillow==12.3.0",
+    # regenerate_token.py : script d'admin ponctuel (régénère un refresh
+    # token Google à la main), jamais lancé par le serveur.
+    "google-auth-oauthlib==1.4.0",
+]
+
+[tool.ruff]
+line-length = 100
+# Doit matcher la version réellement utilisée en prod (Dockerfile :
+# FROM python:3.11-slim), pas requires-python (>=3.11, un plancher, pas la
+# version d'exécution) -- sinon ruff accepterait en lint une syntaxe
+# 3.12+/3.13 qui planterait à l'exécution.
+target-version = "py311"
+extend-exclude = [
+    ".venv",
+    ".venv1",
+    "venv",
+    "node_modules",
+    "app/resources",
+    "app/data",
+]
+
+# Contrat de FORMATAGE explicite (équivalent Black), pour que tous les
+# environnements (éditeur, pre-commit, `uv run ruff`, CI) produisent le MÊME
+# rendu. Ce sont les valeurs par défaut de Ruff — on les fige noir sur blanc
+# pour éviter toute divergence (ex. un formateur tiers en 88 colonnes).
+# La largeur de ligne est héritée de [tool.ruff] (line-length = 100).
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle (erreurs)
+    "F",   # Pyflakes (imports inutilisés, variables mortes, …)
+    "I",   # isort (tri des imports)
+    "B",   # flake8-bugbear (anti-patterns à risque)
+    "UP",  # pyupgrade (modernisation de la syntaxe)
+    "SIM", # flake8-simplify (simplifications)
+]
+ignore = [
+    "E501",  # ligne trop longue — géré plus tard (le formatage prime)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI utilise File(...), Query(...), Depends(...) comme valeurs par défaut
+# dans les signatures de fonctions — c'est le pattern officiel, pas un bug.
+"app/ingestion/routes.py" = ["B008"]
+
+# =============================================================================
+# Pytest
+# =============================================================================
+# `pythonpath = ["."]` : garantit que `from app... import ...` se résout
+# depuis la racine du projet quelle que soit la façon dont pytest est
+# invoqué (pytest nu, `python -m pytest`, depuis un IDE) -- sans ça, la
+# résolution dépend de l'outil qui lance les tests.
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+
+

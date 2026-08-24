@@ -1,0 +1,1370 @@
+/* Reset minimal -- cette page est désormais un document HTML autonome (plus
+   de layout externe LeCockpittt qui posait ce genre de reset globalement).
+   Chargée en plein écran quand Oracle est accédé directement, ou dans un
+   iframe same-origin quand LeCockpittt la sert sous /oracle/app/. */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: #f8fafc; /* même teinte que .oracle-scope (--bg) -- évite un
+                             blanc par défaut visible en marge si le contenu
+                             ne remplit pas exactement le viewport de l'iframe */
+}
+
+/* Mini équivalents Bootstrap -- le markup porté depuis LeCockpittt utilise
+   quelques classes Bootstrap (btn/btn-outline-secondary/btn-sm/btn-close/
+   me-1/text-muted) qui venaient gratuitement du Bootstrap global chargé par
+   base.html côté LeCockpittt. Cette page est désormais autonome (plus de
+   Bootstrap chargé) : on ne réimplémente que ces quelques classes utilisées,
+   pas tout le framework, pour rester légers. */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    padding: 6px 12px;
+    cursor: pointer;
+    background: none;
+    font-family: inherit;
+    transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+}
+.btn-sm { padding: 4px 10px; font-size: 12.5px; border-radius: 5px; }
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+    background: transparent;
+}
+.btn-outline-secondary:hover {
+    color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+.me-1 { margin-right: 4px; }
+.text-muted { color: var(--text-muted, #64748b); }
+.btn-close {
+    width: 16px;
+    height: 16px;
+    background: transparent
+        url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e")
+        center / 1em auto no-repeat;
+    border: 0;
+    border-radius: 4px;
+    opacity: 0.5;
+    cursor: pointer;
+}
+.btn-close:hover { opacity: 0.75; }
+
+/* Variables scoped — n'écrase pas les variables Cockpittt. Palette alignée
+   hex pour hex sur celle de LeCockpittt (app/static/css/style.css) : accent =
+   --color-menthe/--color-menthe-dark, bg/border/text/text-muted = mêmes
+   teintes Slate -- Oracle tourne dans un iframe same-origin sur ce fond, un
+   écart de charte se voyait immédiatement à la jonction. */
+.oracle-scope {
+    --accent: #3fb494;
+    --accent-dark: #2f8b72;
+    --accent-light: rgba(63,180,148,0.1);
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --conv-bg: #f9fafb;
+    --conv-hover: rgba(63,180,148,0.07);
+    --conv-active: rgba(63,180,148,0.13);
+    --conv-active-border: rgba(63,180,148,0.4);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+
+    display: flex;
+    flex-direction: row;      /* horizontal : panneau + chat */
+    height: 100vh;            /* page autonome : plus de chrome externe au-dessus */
+    font-family: var(--font);
+    gap: 0;
+    background: var(--bg);
+}
+
+/* ══════════════════════════════════════════════════════
+   PANNEAU CONVERSATIONS (gauche)
+══════════════════════════════════════════════════════ */
+
+.oracle-conv-panel {
+    width: 210px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--conv-bg);
+    overflow: hidden;
+}
+
+.oracle-new-conv-btn {
+    margin: 10px 10px 6px;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.15s, background 0.15s;
+    flex-shrink: 0;
+}
+
+.oracle-new-conv-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent-dark);
+}
+
+.oracle-conv-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 10px 12px;
+}
+
+.oracle-conv-list::-webkit-scrollbar { width: 4px; }
+.oracle-conv-list::-webkit-scrollbar-track { background: transparent; }
+.oracle-conv-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.oracle-conv-date-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 8px 4px 4px;
+}
+
+.oracle-conv-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 8px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.12s;
+    min-width: 0;
+    position: relative;
+}
+
+.oracle-conv-item:hover { background: var(--conv-hover); }
+
+.oracle-conv-item.active {
+    background: var(--conv-active);
+    border-left: 2px solid var(--conv-active-border);
+    padding-left: 6px;
+}
+
+.oracle-conv-item-title {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.oracle-conv-item.active .oracle-conv-item-title { font-weight: 500; color: var(--accent-dark); }
+
+/* Boutons d'action (crayon + croix) — visibles au hover */
+.oracle-conv-rename-btn,
+.oracle-conv-delete-btn {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.12s, color 0.12s, background 0.12s;
+}
+
+.oracle-conv-rename-btn svg,
+.oracle-conv-delete-btn svg { width: 10px; height: 10px; }
+
+.oracle-conv-item:hover .oracle-conv-rename-btn,
+.oracle-conv-item:hover .oracle-conv-delete-btn { opacity: 1; }
+
+.oracle-conv-rename-btn:hover { color: var(--accent-dark); background: var(--accent-light); }
+.oracle-conv-delete-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+
+/* Mode édition (renommage) */
+.oracle-conv-item.editing .oracle-conv-item-title { display: none; }
+.oracle-conv-item.editing .oracle-conv-rename-btn,
+.oracle-conv-item.editing .oracle-conv-delete-btn { opacity: 0; pointer-events: none; }
+
+.oracle-conv-rename-input {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: var(--font);
+    padding: 2px 5px;
+    outline: none;
+    min-width: 0;
+}
+
+.oracle-conv-empty {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* ══════════════════════════════════════════════════════
+   ZONE CHAT (droite)
+══════════════════════════════════════════════════════ */
+
+.oracle-chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 16px 24px 0;
+    overflow: hidden;
+}
+
+/* ---- TOPBAR ---- */
+.oracle-topbar {
+    padding: 0 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.oracle-topbar-left h1 {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.oracle-topbar-left p {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.oracle-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ---- DROPZONE (glisser-déposer, multi-fichiers, dossiers) ----
+   Vit désormais dans l'onglet "Documents" de la modale de paramètres
+   (cf. #settings-panel-documents) -- plus de panneau autonome dans la topbar. */
+.dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 22px 16px;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius, 10px);
+    background: var(--bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.dropzone:hover { border-color: var(--accent); }
+
+.dropzone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--text);
+}
+
+.dropzone-icon {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 4px;
+    color: var(--accent);
+}
+
+.dropzone-text { font-size: 13px; color: var(--text); }
+.dropzone-browse { color: var(--accent); font-weight: 600; text-decoration: underline; }
+.dropzone-hint { font-size: 11.5px; color: var(--text-muted); }
+
+#upload-status-list { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+
+.upload-row {
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.dot-processing { background: #f59e0b; animation: oracle-pulse 1.2s ease-in-out infinite; }
+.dot-done       { background: var(--accent); }
+.dot-error      { background: #ef4444; }
+.dot-empty      { background: #f59e0b; }
+
+@keyframes oracle-pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+/* ---- DOCUMENTS INDEXÉS (liste + suppression) ---- */
+.indexed-docs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.btn-text-link {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--accent-dark);
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 0;
+}
+.btn-text-link:hover { text-decoration: underline; }
+
+#indexed-docs-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.indexed-docs-loading {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 6px 2px;
+}
+
+.indexed-doc-row {
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+}
+
+.indexed-doc-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.indexed-doc-date {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.btn-delete-doc {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px;
+    cursor: pointer;
+    color: #b91c1c;
+    transition: border-color 0.15s, background 0.15s;
+}
+.btn-delete-doc svg { width: 14px; height: 14px; }
+.btn-delete-doc:hover { border-color: #b91c1c; background: #fee2e2; }
+
+/* ---- Base de données Cockpittt (synchro Mongo -> RAG, cf. mongo-sync-btn) ---- */
+#mongo-sync-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mongo-sync-row {
+    font-size: 12.5px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.mongo-sync-row-main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mongo-sync-row-date {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.mongo-sync-full {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+#mongo-sync-btn { margin-bottom: 4px; }
+
+/* ---- ÉCRAN D'ACCUEIL ---- */
+.oracle-welcome {
+    display: none;  /* caché par défaut */
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.oracle-chat-area.welcome-mode .oracle-welcome { display: flex; }
+.oracle-chat-area.welcome-mode .oracle-messages { display: none; }
+
+.oracle-welcome-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 20px;
+}
+
+.oracle-welcome-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+}
+
+.oracle-welcome-icon svg {
+    width: 26px;
+    height: 26px;
+    stroke: white;
+}
+
+.oracle-welcome-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+}
+
+.oracle-welcome-sub {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* ---- MESSAGES ---- */
+.oracle-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.msg-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    max-width: 820px;
+    width: 100%;
+    margin: 0 auto;
+    transition: opacity 0.5s ease, filter 0.5s ease;
+}
+
+.msg-row.user { flex-direction: row-reverse; }
+
+/* Message sorti de la fenêtre de mémoire active (réglage max_history_turns) :
+   le modèle ne le "voit" plus dans ses prochaines réponses. Grisé en
+   permanence, avec une animation la première fois qu'il en sort (cf.
+   applyContextWindow() dans script.js). */
+.msg-row.out-of-context {
+    opacity: 0.4;
+    filter: grayscale(70%);
+}
+/* ::after sur .msg-body (bloc normal) plutôt que sur .msg-row (flex) --
+   sinon le pseudo-élément deviendrait un flex item de plus à côté de
+   l'avatar au lieu de s'afficher sous le texte du message. */
+.msg-row.out-of-context .msg-body::after {
+    content: "Hors mémoire -- l'assistant ne s'en souvient plus";
+    display: block;
+    font-size: 10.5px;
+    font-style: italic;
+    color: var(--text-muted, #64748b);
+    margin-top: 6px;
+}
+.msg-row.just-evicted {
+    animation: msg-evict 0.7s ease;
+}
+@keyframes msg-evict {
+    0%   { transform: translateY(0); opacity: 1; filter: grayscale(0%); }
+    40%  { transform: translateY(-3px); opacity: 0.7; }
+    100% { transform: translateY(0); opacity: 0.4; filter: grayscale(70%); }
+}
+
+.msg-row.user .msg-body {
+    background: var(--user-msg-bg, #eef9f7);
+    border: 1px solid var(--user-msg-border, #c5ede6);
+    border-radius: 12px 12px 3px 12px;
+    padding: 11px 15px;
+    font-size: 15px;
+    line-height: 1.55;
+    max-width: 70%;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    color: var(--text);
+}
+
+/* Pièce jointe éphémère affichée sur le propre message de l'utilisateur
+   (jamais sur la réponse de l'assistant -- ce n'est pas une "source" RAG,
+   cf. buildSourcesBlock). */
+.msg-attachment-chip {
+    /* display: flex (bloc) plutôt qu'inline-flex : force le texte du message
+       à passer à la ligne suivante au lieu de s'accoler à droite de la
+       puce -- même comportement que Claude quand un fichier est joint. */
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    padding: 3px 8px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid var(--user-msg-border, #c5ede6);
+    color: var(--text-muted);
+    white-space: normal;
+}
+
+.msg-row.assistant .msg-body {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 3px 12px 12px 12px;
+    padding: 13px 18px;
+    font-size: 15px;
+    line-height: 1.7;
+    min-width: 0;
+}
+
+.avatar {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+}
+
+.avatar.bot { background: var(--accent); }
+.avatar.bot svg { width: 15px; height: 15px; fill: white; }
+
+/* Markdown */
+.msg-body p { margin: 0 0 8px; }
+.msg-body p:last-child { margin-bottom: 0; }
+.msg-body ul, .msg-body ol { padding-left: 18px; margin: 0 0 8px; }
+.msg-body li { margin-bottom: 3px; }
+.msg-body code {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 12.5px;
+    font-family: "SF Mono", Consolas, monospace;
+}
+.msg-body pre {
+    background: #1a1e2e;
+    color: #d4d4d4;
+    border-radius: 8px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+.msg-body pre code { background: none; border: none; padding: 0; font-size: 12.5px; color: inherit; }
+.msg-body strong { font-weight: 600; }
+.msg-body h1 { font-size: 17px; font-weight: 600; margin: 12px 0 5px; }
+.msg-body h2 { font-size: 15px; font-weight: 600; margin: 10px 0 5px; }
+.msg-body h3 { font-size: 14px; font-weight: 600; margin: 8px 0 4px; }
+.msg-body blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: 10px;
+    color: var(--text-muted);
+    margin: 6px 0;
+}
+.msg-body table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 8px 0; }
+.msg-body th, .msg-body td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+.msg-body th { background: var(--bg); font-weight: 600; }
+
+/* Sources */
+.sources-block {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.source-chip {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+a.source-chip { cursor: pointer; }
+a.source-chip:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent-dark);
+}
+
+/* Badge de provenance pour les sources issues de la synchro Mongo
+   (companies/contacts/ticket_transaction) -- pas un lien vers un fichier
+   consultable, juste un indicateur de provenance : distingué visuellement
+   des chips-fichiers pour ne pas laisser croire qu'il y a quelque chose à
+   cliquer dessus. */
+.source-chip--cockpittt {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent-dark);
+    cursor: default;
+}
+
+/* Debug retrieval -- réservé aux admins (cf. window.ORACLE_IS_ADMIN dans
+   script.js, résolu via /session-info), à des fins de test/calibrage : montre
+   en plus les candidats écartés par le reranker et leurs scores vecteur/rerank. */
+.debug-retrieval {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 11.5px;
+    color: var(--text-muted);
+}
+.debug-retrieval summary {
+    cursor: pointer;
+    font-weight: 500;
+    list-style: none;
+}
+.debug-retrieval summary::-webkit-details-marker { display: none; }
+.debug-retrieval summary::before { content: "▸ "; }
+.debug-retrieval[open] summary::before { content: "▾ "; }
+
+.debug-search-query {
+    margin: 6px 0;
+    font-style: italic;
+}
+
+.debug-candidate {
+    margin-top: 6px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.debug-candidate-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+
+.debug-scores { font-family: monospace; font-size: 10.5px; }
+
+.debug-candidate-text {
+    white-space: pre-wrap;
+    max-height: 120px;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+/* Temps de réponse -- visible par tout le monde (aucune donnée sensible),
+   contrairement au panneau debug retrieval. Pas un <details> : rien à
+   replier, juste un repère utile (ex: latence d'un Ollama distant). Jamais
+   persisté. */
+.msg-timing {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.msg-timing i { font-size: 11px; }
+
+/* Feedback (thumbs up/down) -- style Claude : icônes seules, sans cadre,
+   gris discret au repos, cercle gris léger au survol, icône pleine (remplie)
+   une fois le vote posé -- pas de fond coloré permanent. */
+.msg-feedback {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.feedback-btn {
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.feedback-btn:hover { background: var(--bg); color: var(--text); }
+.feedback-btn.active { color: var(--text); }
+
+/* Retour négatif : fenêtre modale centrée (façon Claude), pas un popover
+   ancré au bouton -- même mécanique d'overlay que la modale de paramètres.
+   Variables redéclarées localement comme .oracle-modal-overlay : cette
+   modale est un sibling de .oracle-scope dans le DOM (placée après sa
+   fermeture, cf. index.html), pas un descendant -- var(--border) etc. ne
+   seraient sinon jamais résolues (bordures/couleurs invisibles). */
+.feedback-modal-overlay {
+    --accent: #3fb494;
+    --accent-dark: #2f8b72;
+    --accent-light: rgba(63,180,148,0.1);
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    position: fixed;
+    inset: 0;
+    z-index: 1600;
+    background: rgba(20,24,38,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.feedback-modal-overlay.visible { display: flex; }
+
+.feedback-modal {
+    background: var(--card, #fff);
+    border-radius: 12px;
+    width: min(480px, 92vw);
+    padding: 28px 28px 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.feedback-modal-title {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+}
+
+.feedback-modal-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.feedback-modal-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.feedback-modal-select,
+.feedback-modal-textarea {
+    width: 100%;
+    font-family: inherit;
+    font-size: 13.5px;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 10px;
+    background: #fff;
+}
+.feedback-modal-textarea { resize: vertical; line-height: 1.5; }
+.feedback-modal-select:focus,
+.feedback-modal-textarea:focus { outline: none; border-color: var(--accent, #3fb494); }
+
+.feedback-modal-disclaimer {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.feedback-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.feedback-modal-submit {
+    border: none;
+    background: var(--text, #0f172a);
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.feedback-modal-submit:hover { opacity: 0.85; }
+
+/* Écran admin "Retours" (consultation des feedbacks) */
+.feedback-admin-filters {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+.feedback-admin-filter {
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 12.5px;
+    cursor: pointer;
+}
+.feedback-admin-filter:hover { background: var(--bg); }
+.feedback-admin-filter.active {
+    background: var(--accent-light, rgba(63,180,148,0.1));
+    border-color: var(--accent, #3fb494);
+    color: var(--accent-dark, #2f8b72);
+    font-weight: 600;
+}
+
+.feedback-admin-row {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--card, #fff);
+}
+
+.feedback-admin-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.feedback-admin-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+}
+.feedback-admin-badge.up { background: var(--accent-light, rgba(63,180,148,0.12)); color: var(--accent-dark, #2f8b72); }
+.feedback-admin-badge.down { background: #fee2e2; color: #b91c1c; }
+
+.feedback-admin-category {
+    font-size: 11px;
+    font-weight: 600;
+    color: #b91c1c;
+    background: #fee2e2;
+    border-radius: 999px;
+    padding: 2px 8px;
+}
+
+.feedback-admin-conv-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.feedback-admin-date {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.feedback-admin-question {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+.feedback-admin-question::before { content: "Q : "; font-weight: 600; }
+
+.feedback-admin-answer {
+    font-size: 13px;
+    color: var(--text);
+    white-space: pre-wrap;
+}
+.feedback-admin-answer.muted { color: var(--text-muted); font-style: italic; }
+
+.feedback-admin-comment {
+    margin-top: 6px;
+    font-size: 12.5px;
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+/* Typing */
+.typing-indicator { display: flex; gap: 5px; align-items: center; padding: 2px 0; }
+.typing-indicator span {
+    width: 7px; height: 7px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 1.4s infinite both;
+    opacity: 0.4;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+/* ---- INPUT AREA ---- */
+.oracle-input-area {
+    /* Pas de --card (blanc) ici : ça créait un bandeau blanc plein sur toute
+       la largeur, visuellement détaché du reste du fond -- seule la pilule
+       de saisie (.oracle-input-box) doit se détacher, pas toute la zone. */
+    background: transparent;
+    border-top: 1px solid var(--border);
+    padding: 14px 0 16px;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+/* Glisser-déposer d'un fichier directement dans la zone de message -- pièce
+   jointe éphémère (pour la question en cours uniquement), distincte de la
+   dropzone du panneau "Ajouter des documents" (qui indexe en base). */
+.oracle-input-area.dragover-attach {
+    background: var(--accent-light);
+}
+
+.oracle-input-inner { max-width: 820px; margin: 0 auto; }
+
+.oracle-input-box {
+    /* --card (blanc) et non --bg : la zone autour est maintenant
+       transparente (fond de page directement visible), la pilule doit donc
+       se distinguer par sa propre couleur plutôt que par contraste avec un
+       bandeau qui n'existe plus. */
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 10px 10px 14px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.oracle-input-box:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(63,180,148,0.12);
+}
+
+#chat-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: none;
+    font-family: var(--font);
+    font-size: 15px;
+    color: var(--text);
+    resize: none;
+    max-height: 160px;
+    overflow-y: auto;
+    line-height: 1.5;
+    padding: 2px 0;
+}
+
+#chat-input::placeholder { color: var(--text-muted); }
+
+.oracle-send-btn {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.oracle-send-btn:hover { background: var(--accent-dark); }
+.oracle-send-btn:active { transform: scale(0.93); }
+.oracle-send-btn:disabled { background: var(--border); cursor: not-allowed; }
+.oracle-send-btn i { font-size: 14px; }
+
+.oracle-attach-btn {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+}
+.oracle-attach-btn:hover { background: var(--accent-light); color: var(--accent-dark); }
+.oracle-attach-btn i { font-size: 15px; }
+
+/* Pièce jointe en attente d'envoi (au-dessus de la zone de saisie) */
+.pending-attachment { margin-bottom: 8px; display: flex; }
+
+.attachment-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    padding: 4px 6px 4px 10px;
+    border-radius: 7px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+.attachment-chip.loading { color: var(--text-muted); }
+
+.attachment-chip-remove {
+    width: 18px; height: 18px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.attachment-chip-remove:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+
+.oracle-input-hint {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 6px;
+}
+
+/* ---- SCROLLBAR ---- */
+.oracle-messages::-webkit-scrollbar { width: 5px; }
+.oracle-messages::-webkit-scrollbar-track { background: transparent; }
+.oracle-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ---- TOAST (remplace showToast() de base.js LeCockpittt, absent ici --
+   page autonome) ---- */
+.oracle-toast-container {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.oracle-toast {
+    background: #1a1e2e;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.2s, transform 0.2s;
+    max-width: 320px;
+}
+.oracle-toast.visible { opacity: 1; transform: translateY(0); }
+.oracle-toast.error { background: #b91c1c; }
+
+/* ---- MODALE PARAMÈTRES RAG ----
+   Sibling de .oracle-scope (pas descendant) : les variables --accent/--card/
+   etc. sont scopées à .oracle-scope et ne seraient pas héritées ici, donc on
+   les redéclare localement plutôt que de déplacer la modale dans .oracle-scope
+   (ce qui la ferait défiler avec le reste au lieu de rester en overlay fixe). */
+.oracle-modal-overlay {
+    --accent: #3fb494;
+    --accent-dark: #2f8b72;
+    --accent-light: rgba(63,180,148,0.1);
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    background: rgba(20, 24, 38, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.oracle-modal-overlay.visible { display: flex; }
+
+.oracle-modal {
+    background: var(--card);
+    border-radius: 12px;
+    width: min(760px, 94vw);
+    height: min(600px, 88vh);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+}
+
+.oracle-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+}
+
+/* Layout façon Claude : sidebar de sections à gauche, contenu à droite. */
+.oracle-modal-layout {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+}
+
+.oracle-modal-sidebar {
+    width: 180px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+}
+
+.oracle-modal-navitem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 8px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+}
+.oracle-modal-navitem:hover { background: var(--bg); color: var(--text); }
+.oracle-modal-navitem.active {
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    font-weight: 600;
+}
+
+.oracle-modal-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.oracle-modal-body {
+    padding: 18px 22px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+.oracle-modal-panel { display: none; }
+.oracle-modal-panel.active { display: block; }
+
+.oracle-settings-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin: 22px 0 10px;
+}
+.oracle-settings-group-title:first-child { margin-top: 0; }
+
+.oracle-settings-field { margin-bottom: 18px; }
+.oracle-settings-field label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 7px;
+}
+.oracle-settings-value {
+    font-weight: 700;
+    color: var(--accent-dark);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+.oracle-settings-field textarea {
+    width: 100%;
+    font-family: inherit;
+    font-size: 13.5px;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 10px;
+    background: #fff;
+    resize: vertical;
+    line-height: 1.5;
+}
+.oracle-settings-field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* ---- Curseurs (range) -- remplacent les anciens champs numériques ---- */
+.oracle-settings-field input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+}
+.oracle-settings-field input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--accent);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.oracle-settings-field input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+.oracle-settings-field input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+}
+.oracle-settings-field input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--accent);
+    cursor: pointer;
+}
+.oracle-settings-help {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.oracle-settings-loading {
+    color: var(--text-muted);
+    font-size: 13.5px;
+    padding: 20px 0;
+    text-align: center;
+}
+
+.oracle-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.oracle-modal-footer-actions { display: flex; gap: 8px; }
+.oracle-modal-save-btn {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+.oracle-modal-save-btn:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.oracle-modal-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }

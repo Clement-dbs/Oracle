@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oracle</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<link rel="stylesheet" href="{{ static_base }}/style.css?v={{ static_version }}">
+</head>
+<body>
+
+<div class="oracle-scope" id="oracle-chat">
+
+    <!-- PANNEAU CONVERSATIONS (gauche) -->
+    <div class="oracle-conv-panel">
+        <button class="oracle-new-conv-btn" id="new-chat-btn">
+            <i class="bi bi-plus-lg"></i> Nouvelle conversation
+        </button>
+        <div class="oracle-conv-list" id="conversations-list">
+            <!-- peuplé par JS -->
+        </div>
+    </div>
+
+    <!-- ZONE CHAT (droite) -->
+    <div class="oracle-chat-area">
+
+        <!-- TOPBAR -->
+        <div class="oracle-topbar">
+            <div class="oracle-topbar-left">
+                <h1 class="oracle-title" id="topbar-title">Assistant IA</h1>
+                <p class="oracle-subtitle">Posez une question sur vos documents</p>
+            </div>
+            <div class="oracle-topbar-actions">
+                <button class="btn btn-outline-secondary btn-sm" id="settings-toggle-btn" style="display:none">
+                    <i class="bi bi-sliders me-1"></i> Paramètres
+                </button>
+            </div>
+        </div>
+
+        <!-- ÉCRAN D'ACCUEIL (affiché quand aucun message dans la conversation) -->
+        <div class="oracle-welcome" id="oracle-welcome">
+            <div class="oracle-welcome-inner">
+                <div class="oracle-welcome-icon">
+                    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <h2 class="oracle-welcome-title" id="welcome-title">Bonjour !</h2>
+                <p class="oracle-welcome-sub">En quoi puis-je vous aider ?</p>
+            </div>
+        </div>
+
+        <!-- MESSAGES -->
+        <div class="oracle-messages" id="chat-messages">
+            <div class="msg-row assistant">
+                <div class="avatar bot">
+                    <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="msg-body">Bonjour ! Posez-moi une question sur vos documents, je suis là pour vous aider.</div>
+            </div>
+        </div>
+
+        <!-- INPUT -->
+        <div class="oracle-input-area" id="chat-input-area">
+            <div class="oracle-input-inner">
+                <div id="pending-attachment-chip" class="pending-attachment" style="display:none"></div>
+                <div class="oracle-input-box">
+                    <button class="oracle-attach-btn" id="attach-btn" type="button" title="Joindre un fichier (pour cette question uniquement)">
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+                    <input type="file" id="chat-file-input" accept=".pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg" hidden>
+                    <textarea
+                        id="chat-input"
+                        rows="1"
+                        placeholder="Écrivez votre message…"
+                        autocomplete="off"
+                    ></textarea>
+                    <button class="oracle-send-btn" id="send-btn" disabled>
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+                <p class="oracle-input-hint text-muted">Entrée pour envoyer · Maj+Entrée pour un saut de ligne · Glissez un fichier pour le joindre à cette question</p>
+            </div>
+        </div>
+
+    </div><!-- /oracle-chat-area -->
+
+</div><!-- /oracle-scope -->
+
+<!-- MODALE PARAMÈTRES (façon Claude : sidebar de sections + contenu) -->
+<div class="oracle-modal-overlay" id="settings-modal-overlay">
+    <div class="oracle-modal" id="settings-modal">
+        <div class="oracle-modal-header">
+            <span>Paramètres</span>
+            <button class="btn-close" id="settings-close-btn" aria-label="Fermer"></button>
+        </div>
+        <div class="oracle-modal-layout">
+            <div class="oracle-modal-sidebar" id="settings-sidebar"></div>
+            <div class="oracle-modal-main">
+                <div class="oracle-modal-body" id="settings-body">
+                    <!-- Général : réglages RAG, généré dynamiquement (cf. renderSettingsForm) -->
+                    <div class="oracle-modal-panel active" id="settings-panel-general"></div>
+
+                    <!-- Documents : ajout (dropzone) + liste indexée, portés depuis l'ancien panneau upload -->
+                    <div class="oracle-modal-panel" id="settings-panel-documents">
+                        <div class="dropzone" id="dropzone">
+                            <input type="file" id="file-input" accept=".pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg" multiple hidden>
+                            <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <p class="dropzone-text">Glissez vos documents ici, ou <span class="dropzone-browse">parcourez vos fichiers</span></p>
+                        </div>
+                        <div id="upload-status-list"></div>
+
+                        <!-- Base de données Cockpittt : synchro Mongo -> RAG, table par table
+                             (cf. app.cockpittt.mongo_sync côté Oracle). -->
+                        <div class="indexed-docs-header">
+                            <span>Base de données (Cockpittt)</span>
+                        </div>
+                        <p class="oracle-settings-help">Ingère les fiches entreprises, contacts et opportunités CRM de Cockpittt dans la base documentaire d'Oracle.</p>
+                        <div id="mongo-sync-list"></div>
+                        <label class="mongo-sync-full">
+                            <input type="checkbox" id="mongo-sync-full-checkbox">
+                            Resynchronisation complète (ignore la dernière synchro connue)
+                        </label>
+                        <button class="btn btn-outline-secondary btn-sm" id="mongo-sync-btn">
+                            <i class="bi bi-arrow-repeat me-1"></i> Ingérer la sélection
+                        </button>
+
+                        <div class="indexed-docs-header">
+                            <span>Documents indexés</span>
+                            <button class="btn-text-link" id="refresh-docs-btn">Actualiser</button>
+                        </div>
+                        <div id="indexed-docs-list"></div>
+                    </div>
+
+                    <!-- Retours : consultation des feedbacks (thumbs up/down), admin uniquement -->
+                    <div class="oracle-modal-panel" id="settings-panel-feedback">
+                        <div class="feedback-admin-filters">
+                            <button type="button" class="feedback-admin-filter active" data-rating="">Tous</button>
+                            <button type="button" class="feedback-admin-filter" data-rating="down">Négatifs</button>
+                            <button type="button" class="feedback-admin-filter" data-rating="up">Positifs</button>
+                        </div>
+                        <div id="feedback-admin-list"></div>
+                    </div>
+                </div>
+                <div class="oracle-modal-footer" id="settings-footer">
+                    <button class="btn-text-link" id="settings-reset-btn">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Rétablir les paramètres par défaut
+                    </button>
+                    <div class="oracle-modal-footer-actions">
+                        <button class="btn btn-outline-secondary btn-sm" id="settings-cancel-btn">Annuler</button>
+                        <button class="btn btn-sm oracle-modal-save-btn" id="settings-save-btn">Enregistrer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Retour (pouce haut/bas) : fenêtre modale centrée, façon Claude -- même
+     modale pour les deux, le groupe catégorie n'est affiché que pour un
+     retour négatif (cf. openFeedbackModal() dans script.js). -->
+<div class="feedback-modal-overlay" id="feedback-modal-overlay">
+    <div class="feedback-modal">
+        <div class="feedback-modal-title" id="feedback-modal-title">Donner un retour négatif</div>
+
+        <div class="feedback-modal-group" id="feedback-modal-category-group">
+            <label class="feedback-modal-label" for="feedback-modal-category">Quel type de problème souhaitez-vous signaler ? (facultatif)</label>
+            <select class="feedback-modal-select" id="feedback-modal-category">
+                <option value="">Sélectionner…</option>
+                <option value="trop_long">Réponse trop longue</option>
+                <option value="incorrect">Réponse incorrecte</option>
+                <option value="bug">Bug</option>
+                <option value="autre">Autre</option>
+            </select>
+        </div>
+
+        <div class="feedback-modal-group">
+            <label class="feedback-modal-label" for="feedback-modal-comment">Veuillez fournir des détails : (facultatif)</label>
+            <textarea class="feedback-modal-textarea" id="feedback-modal-comment" rows="3" placeholder="Dans quelle mesure cette réponse était-elle insatisfaisante ?"></textarea>
+        </div>
+
+        <p class="feedback-modal-disclaimer">En envoyant ce retour, la question et la réponse concernées sont conservées pour aider à améliorer Oracle.</p>
+
+        <div class="feedback-modal-actions">
+            <button class="btn btn-outline-secondary btn-sm" id="feedback-modal-cancel">Annuler</button>
+            <button class="feedback-modal-submit" id="feedback-modal-submit">Envoyer</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // api_base : "" en accès direct (dev/test), "/oracle/api" quand cette
+    // page est reverse-proxyée par LeCockpittt (cf. factory.py::frontend()).
+    window.ORACLE_API_BASE = "{{ api_base }}";
+</script>
+<script src="{{ static_base }}/script.js?v={{ static_version }}"></script>
+</body>
+</html>

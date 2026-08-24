@@ -1,0 +1,70 @@
+name: oracle-dev
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-dev
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio-dev
+    command: server /data --console-address ":9001"
+    env_file: .env
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes: ["minio_data:/data"]
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: backend-dev
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    depends_on:
+      - qdrant
+      - redis
+      - minio
+    volumes:
+      - ./app:/app/app
+      - ./embeddings_models:/app/embeddings_models
+      - ./main.py:/app/main.py
+      - ./factory.py:/app/factory.py
+      - oracle_secret_dev:/app/secrets
+    networks:
+      - default
+      - cockpit-network
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
+    name: oracle_qdrant_data_dev
+  redis_data:
+    name: oracle_redis_data_dev
+  minio_data:
+    name: oracle_minio_data_dev
+  oracle_secret_dev:
+    name: oracle_oracle_secret_dev
+
+networks:
+  cockpit-network:
+    external: true
+    name: lecockpittt_cockpit-network

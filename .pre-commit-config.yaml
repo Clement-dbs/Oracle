@@ -1,0 +1,8 @@
+# Hooks pre-commit — lint + format Ruff avant chaque commit.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.19
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format

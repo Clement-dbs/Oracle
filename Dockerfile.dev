@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+# Image de dev -- identique à Dockerfile (prod) mais installe aussi
+# requirements-dev.txt (lint, tests, évaluation Ragas). Utilisée uniquement
+# par docker-compose-dev.yml (build.dockerfile). Le Dockerfile prod (buildé
+# par release_ghcr.sh) reste inchangé, sans ces outils.
+FROM python:3.11-slim
+
+COPY --from=ghcr.io/astral-sh/uv:0.11.31 /uv /usr/local/bin/uv
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-fra \
+    libgl1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt requirements-dev.txt ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system -r requirements-dev.txt
+
+COPY app ./app
+COPY main.py .
+COPY factory.py .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

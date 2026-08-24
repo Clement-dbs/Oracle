@@ -1,0 +1,79 @@
+name: oracle-prod
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-prod
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - internal
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-prod
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio-prod
+    command: server /data --console-address ":9001"
+    env_file: .env
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes: ["minio_data:/data"]
+    networks:
+      - internal
+      # Réseau non-interne dédié : nécessaire pour que Docker publie
+      # réellement les ports ci-dessus -- un container UNIQUEMENT branché sur
+      # un réseau `internal: true` (cf. qdrant/redis) ne voit jamais ses ports
+      # publiés, par conception de Docker (contredirait l'isolation voulue).
+      - minio-console
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/ttt-group/oracle:latest
+    container_name: backend-prod
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    depends_on:
+      - qdrant
+      - redis
+      - minio
+    volumes:
+      - embeddings_models_prod:/app/embeddings_models
+      - oracle_secret_prod:/app/secrets
+    networks:
+      - internal
+      - cockpit-network
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
+    name: oracle_qdrant_data
+  redis_data:
+    name: oracle_redis_data
+  minio_data:
+    name: oracle_minio_data
+  embeddings_models_prod:
+    name: oracle_embeddings_models_prod
+  oracle_secret_prod:
+    name: oracle_oracle_secret_prod
+
+networks:
+  internal:
+    driver: bridge
+    internal: true
+  minio-console:
+    driver: bridge
+  cockpit-network:
+    external: true
+    name: lecockpittt_cockpit-network
