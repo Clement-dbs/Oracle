@@ -2,8 +2,8 @@
 Sérialise/désérialise les pages extraites en un seul fichier markdown,
 stocké dans MinIO (app.core.minio.parsed_path). Toute ingestion
 (app.ingestion.run_ingestion.process_document) écrit systématiquement ce
-fichier -- c'est la source que réutilise le parseur JSON CRM pour éviter
-une seconde extraction du même document.
+fichier -- couche "silver" persistée pour éviter de relancer
+l'extraction/OCR à chaque réindexation.
 """
 
 import re
@@ -31,14 +31,3 @@ def parse_pages(data: bytes) -> list[dict]:
             }
         )
     return pages
-
-
-def load_parsed_pages(object_name: str) -> list[dict]:
-    """Lit et désérialise la version markdown déjà extraite d'un objet
-    'ingestion/...' (écrite par process_document() à l'ingestion, dans
-    parsed/). Utilisé par le parseur JSON CRM (app.json_parser.services.
-    loader.load_text_from_minio) pour réutiliser l'extraction RAG au lieu
-    de la refaire."""
-    from app.core.minio import download_bytes, parsed_path
-
-    return parse_pages(download_bytes(parsed_path(object_name)))

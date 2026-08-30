@@ -1,28 +1,19 @@
 """
 Routes admin pour les réglages RAG (app.core.rag_settings) : lecture,
-mise à jour partielle, réinitialisation. Réservées aux admins -- Oracle n'a
-pas son propre système de droits, il fait confiance au header posé par le
-reverse-proxy LeCockpittt (cf. _require_admin, même logique que /session-info
-dans factory.py).
+mise à jour partielle, réinitialisation. Oracle est une app standalone,
+sans système de droits propre -- ces routes sont accessibles sans
+restriction (cf. /session-info dans factory.py, toujours is_admin=True).
 """
 
 import logging
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.core.rag_settings import get_rag_settings, reset_rag_settings, save_rag_settings
 
 logger = logging.getLogger(__name__)
 settings_router = APIRouter(prefix="/settings")
-
-
-def _require_admin(request: Request) -> None:
-    """Header absent (accès direct/dev, pas de reverse-proxy) : permissif,
-    comme /session-info. Header présent et différent de "1" : refusé."""
-    is_admin_header = request.headers.get("x-oracle-is-admin")
-    if is_admin_header is not None and is_admin_header != "1":
-        raise HTTPException(status_code=403, detail="Réservé aux administrateurs.")
 
 
 class RagSettingsUpdate(BaseModel):
@@ -50,14 +41,12 @@ class RagSettingsUpdate(BaseModel):
 
 
 @settings_router.get("/rag")
-def get_settings(request: Request) -> dict:
-    _require_admin(request)
+def get_settings() -> dict:
     return get_rag_settings()
 
 
 @settings_router.put("/rag")
-def update_settings(body: RagSettingsUpdate, request: Request) -> dict:
-    _require_admin(request)
+def update_settings(body: RagSettingsUpdate) -> dict:
     partial = body.model_dump(exclude_none=True)
     if not partial:
         raise HTTPException(status_code=400, detail="Aucun champ à mettre à jour.")
@@ -65,6 +54,5 @@ def update_settings(body: RagSettingsUpdate, request: Request) -> dict:
 
 
 @settings_router.post("/rag/reset")
-def reset_settings(request: Request) -> dict:
-    _require_admin(request)
+def reset_settings() -> dict:
     return reset_rag_settings()

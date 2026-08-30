@@ -1,7 +1,6 @@
 """
 Filtre de catégories documentaires -- restriction d'accès par droits
-(oracle_docs_reunions / oracle_docs_clients, calculés côté LeCockpittt et
-transmis via schema.ChatRequest.allowed_categories).
+(schema.ChatRequest.allowed_categories, calculés en amont de l'appel).
 
 Extrait dans son propre module, sans dépendance lourde, pour rester
 testable indépendamment du reste de app.ragchain.services.rag_chain (qui
@@ -11,11 +10,9 @@ importe embeddings/reranker_model -- torch, sentence-transformers, coûteux
 
 # Catégories soumises au système de droits documentaires -- dérivées du
 # chemin MinIO (ingestion/<category>/...), pas d'un champ de métadonnée
-# dédié. Toute autre catégorie (notamment "mongo_sync/..." -- companies/
-# contacts/ticket_transaction) n'est PAS concernée par ce système de droits :
-# il n'existe pas de droit granulaire dédié pour ces données CRM, donc on ne
-# les filtre jamais ici -- seul oracle_access (déjà vérifié en amont par
-# LeCockpittt) conditionne leur visibilité.
+# dédié. Oracle étant une app standalone (allowed_categories=None par
+# défaut, cf. /session-info), ce filtre n'est actif que si l'appelant
+# transmet explicitement une liste de catégories autorisées.
 GATED_CATEGORIES = {"reunion", "documents"}
 
 

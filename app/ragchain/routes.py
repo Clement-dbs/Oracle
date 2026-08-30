@@ -31,13 +31,11 @@ ragchain_router = APIRouter(prefix="/chat")
 
 
 def _get_owner(request: Request) -> str:
-    """Identifiant utilisateur stable posé par LeCockpittt (header
-    X-Oracle-User-Id, cf. _trust_headers côté LeCockpittt) -- utilisé pour
-    scoper les conversations par utilisateur (cf. conversations.py). Distinct
-    de X-Oracle-Username, qui porte le prénom affiché et n'est pas garanti
-    unique. Header absent (accès direct/dev sans LeCockpittt devant) : ""
-    -- tout le monde partage alors un espace "anonyme" unique, comme avant
-    ce fix."""
+    """Identifiant utilisateur stable, utilisé pour scoper les conversations
+    par utilisateur (cf. conversations.py). Oracle est une app standalone,
+    sans compte utilisateur propre : header optionnel X-Oracle-User-Id, posé
+    par un éventuel reverse-proxy en amont -- absent en usage direct/dev,
+    auquel cas tout le monde partage un espace "anonyme" unique."""
     return request.headers.get("x-oracle-user-id") or ""
 
 
@@ -172,15 +170,6 @@ def chat_stream(req: ChatRequest, request: Request):
 # ── Feedback (pouce haut/bas sur une réponse) ─────────────────────────────────
 
 
-def _require_admin(request: Request) -> None:
-    """Même garde que app/settings/routes.py::_require_admin -- header
-    absent (accès direct/dev) : permissif. Header présent et différent de
-    "1" : refusé."""
-    is_admin_header = request.headers.get("x-oracle-is-admin")
-    if is_admin_header is not None and is_admin_header != "1":
-        raise HTTPException(status_code=403, detail="Réservé aux administrateurs.")
-
-
 class FeedbackBody(BaseModel):
     rating: Literal["up", "down"]
     category: Literal["trop_long", "incorrect", "bug", "autre"] | None = None
@@ -210,16 +199,15 @@ def get_feedback_route(session_id: str, message_id: str):
 
 
 @ragchain_router.get("/feedback")
-def list_feedback_route(request: Request, rating: str | None = None):
-    """Écran admin de consultation des retours -- réservé à l'admin. Enrichit
-    chaque entrée avec le titre de conversation et la question/réponse
-    associées, quand elles sont encore disponibles (une conversation peut
-    avoir expiré -- cf. conversation_ttl_days -- ou le message être sorti de
-    la fenêtre de mémoire active -- cf. max_history_turns -- sans que le
-    feedback lui-même ne disparaisse, puisqu'il n'a pas de TTL). Utilise
-    get_conversation_any() (pas get_conversation()) : l'admin doit voir
-    l'enrichissement des retours de tout le monde, pas seulement les siens."""
-    _require_admin(request)
+def list_feedback_route(rating: str | None = None):
+    """Écran de consultation des retours. Enrichit chaque entrée avec le
+    titre de conversation et la question/réponse associées, quand elles sont
+    encore disponibles (une conversation peut avoir expiré -- cf.
+    conversation_ttl_days -- ou le message être sorti de la fenêtre de
+    mémoire active -- cf. max_history_turns -- sans que le feedback
+    lui-même ne disparaisse, puisqu'il n'a pas de TTL). Utilise
+    get_conversation_any() (pas get_conversation()) pour voir l'enrichissement
+    des retours de tout le monde, pas seulement ceux de l'appelant."""
     entries = list_feedback(rating=rating)
 
     enriched = []
@@ -251,11 +239,10 @@ def list_feedback_route(request: Request, rating: str | None = None):
 
 
 @ragchain_router.delete("/feedback/{session_id}/{message_id}")
-def delete_feedback_route(session_id: str, message_id: str, request: Request):
-    """Suppression manuelle d'un retour depuis le panneau admin (bouton
-    poubelle) -- ne touche pas à la conversation elle-même, contrairement à la
-    suppression en cascade faite par delete_conversation()."""
-    _require_admin(request)
+def delete_feedback_route(session_id: str, message_id: str):
+    """Suppression manuelle d'un retour depuis le panneau (bouton poubelle) --
+    ne touche pas à la conversation elle-même, contrairement à la suppression
+    en cascade faite par delete_conversation()."""
     deleted = delete_feedback(session_id, message_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Retour introuvable.")

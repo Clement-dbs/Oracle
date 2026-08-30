@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-// "" en accès direct à Oracle, "/oracle/api" quand reverse-proxyé par LeCockpittt.
+// "" en accès direct à Oracle, personnalisable via le header x-oracle-api-base
+// si Oracle est servi derrière un reverse-proxy.
 const API_BASE = window.ORACLE_API_BASE || "";
 
 // Droits/identité, résolus via /session-info au chargement (cf. plus bas).
@@ -36,7 +37,7 @@ const activeStreams = new Map(); // session_id -> { userRow, row, body, typingRo
 let pendingAttachment = null;    // { filename, text, truncated } une fois extrait
 let attachmentLoading = false;
 
-// ── Toast (page autonome : plus de showToast() de base.js LeCockpittt) ──────
+// ── Toast ─────────────────────────────────────────────────────────────────
 
 let toastContainer = null;
 function showToast(message, type = "info") {
@@ -82,17 +83,11 @@ const botAvatarHTML = `<div class="avatar bot">
   <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
 </div>`;
 
-// Sources issues de la synchro Mongo : pas de vrai document, juste un badge
-// de provenance "Cockpittt" (pas de lien /documents/serve).
-const MONGO_SYNC_PREFIX = "ingestion/mongo_sync/";
-
 function buildSourcesBlock(sources) {
   if (!sources || !sources.length) return null;
   const unique = [...new Set(sources)];
-  const fileSources = unique.filter(s => !s.startsWith(MONGO_SYNC_PREFIX));
-  const hasCockpitttSource = unique.some(s => s.startsWith(MONGO_SYNC_PREFIX));
 
-  const fileChips = fileSources.map(s => {
+  const fileChips = unique.map(s => {
     const label = s.split("/").pop();
     const isFullPath = s.startsWith("ingestion/");
     const href = `${API_BASE}/documents/serve?object_name=${encodeURIComponent(s)}`;
@@ -107,16 +102,9 @@ function buildSourcesBlock(sources) {
         </span>`;
   });
 
-  const cockpitttChip = hasCockpitttSource
-    ? `<span class="source-chip source-chip--cockpittt">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>
-        Cockpittt
-      </span>`
-    : "";
-
   const block = document.createElement("div");
   block.className = "sources-block";
-  block.innerHTML = "<span>Sources :</span> " + fileChips.join("") + cockpitttChip;
+  block.innerHTML = "<span>Sources :</span> " + fileChips.join("");
   return block;
 }
 
@@ -1092,7 +1080,6 @@ function switchSettingsSection(section) {
   settingsFooterEl.style.display = section === "general" ? "flex" : "none";
   if (section === "documents") {
     loadIndexedDocuments();
-    loadMongoSyncStatus();
   } else if (section === "general" && !settingsGeneralLoaded) {
     loadGeneralSettings();
   } else if (section === "feedback") {
@@ -1358,85 +1345,6 @@ async function deleteIndexedDocument(source, label) {
   } catch {
     alert("Échec de la suppression. Réessaie ou vérifie les logs serveur.");
   }
-}
-
-// ── Base de données Cockpittt (synchro Mongo -> RAG, table par table) ───────
-// Déclenche app.cockpittt.routes.sync_mongo_now côté Oracle -- une tâche de
-// fond côté serveur, sans suivi par doc_id (contrairement à l'upload de
-// fichier) : on rafraîchit juste la date de dernière synchro après un délai,
-// en best-effort (cf. commentaire sur le setTimeout plus bas).
-
-const MONGO_SYNC_COLLECTIONS = [
-  { key: "companies", label: "Entreprises" },
-  { key: "contacts", label: "Contacts" },
-  { key: "ticket_transaction", label: "Opportunités CRM" },
-];
-
-const mongoSyncListEl        = document.getElementById("mongo-sync-list");
-const mongoSyncFullCheckbox  = document.getElementById("mongo-sync-full-checkbox");
-const mongoSyncBtn           = document.getElementById("mongo-sync-btn");
-
-function formatMongoSyncDate(iso) {
-  if (!iso) return "Jamais synchronisé";
-  return `Dernière synchro : ${formatIndexedDate(iso)}`;
-}
-
-function renderMongoSyncList(status) {
-  if (!mongoSyncListEl) return;
-  mongoSyncListEl.innerHTML = MONGO_SYNC_COLLECTIONS.map(({ key, label }) => `
-    <label class="mongo-sync-row">
-      <span class="mongo-sync-row-main">
-        <input type="checkbox" class="mongo-sync-checkbox" value="${key}" checked>
-        ${escapeHtml(label)}
-      </span>
-      <span class="mongo-sync-row-date">${escapeHtml(formatMongoSyncDate(status[key]))}</span>
-    </label>
-  `).join("");
-}
-
-async function loadMongoSyncStatus() {
-  if (!mongoSyncListEl) return;
-  mongoSyncListEl.innerHTML = `<div class="oracle-settings-loading">Chargement…</div>`;
-  try {
-    const res = await apiFetch("documents/sync-mongo/status");
-    if (!res.ok) throw new Error();
-    renderMongoSyncList(await res.json());
-  } catch {
-    // Statut indisponible (Oracle down, Redis inaccessible...) : on affiche
-    // quand même les cases à cocher, juste sans la date de dernière synchro,
-    // plutôt que de bloquer complètement le bouton d'ingestion.
-    renderMongoSyncList({});
-  }
-}
-
-if (mongoSyncBtn) {
-  mongoSyncBtn.addEventListener("click", async () => {
-    const selected = [...mongoSyncListEl.querySelectorAll(".mongo-sync-checkbox:checked")]
-      .map((el) => el.value);
-    if (!selected.length) {
-      showToast("Sélectionne au moins une table à ingérer.", "error");
-      return;
-    }
-    const full = !!mongoSyncFullCheckbox?.checked;
-
-    mongoSyncBtn.disabled = true;
-    try {
-      const params = new URLSearchParams({ collections: selected.join(","), full: String(full) });
-      const res = await apiFetch(`documents/sync-mongo?${params.toString()}`, { method: "POST" });
-      if (!res.ok) throw new Error();
-      showToast("Synchro lancée en arrière-plan.");
-      // La synchro tourne en tâche de fond côté Oracle (pas de doc_id à
-      // suivre comme pour un upload de fichier) -- délai arbitraire avant de
-      // relire le statut, purement indicatif (peut ne pas être terminé pour
-      // de gros volumes, l'utilisateur peut cliquer sur "Actualiser" -- cf.
-      // refresh-docs-btn -- ou rouvrir le panneau plus tard).
-      setTimeout(loadMongoSyncStatus, 4000);
-    } catch {
-      showToast("Échec du déclenchement de la synchro.", "error");
-    } finally {
-      mongoSyncBtn.disabled = false;
-    }
-  });
 }
 
 // ── Upload (glisser-déposer, multi-fichiers, dossiers) ──────────────────────

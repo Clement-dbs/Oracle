@@ -1,7 +1,4 @@
-/* Reset minimal -- cette page est désormais un document HTML autonome (plus
-   de layout externe LeCockpittt qui posait ce genre de reset globalement).
-   Chargée en plein écran quand Oracle est accédé directement, ou dans un
-   iframe same-origin quand LeCockpittt la sert sous /oracle/app/. */
+/* Reset minimal -- cette page est un document HTML autonome. */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
     height: 100%;
@@ -11,12 +8,10 @@ html, body {
                              ne remplit pas exactement le viewport de l'iframe */
 }
 
-/* Mini équivalents Bootstrap -- le markup porté depuis LeCockpittt utilise
-   quelques classes Bootstrap (btn/btn-outline-secondary/btn-sm/btn-close/
-   me-1/text-muted) qui venaient gratuitement du Bootstrap global chargé par
-   base.html côté LeCockpittt. Cette page est désormais autonome (plus de
-   Bootstrap chargé) : on ne réimplémente que ces quelques classes utilisées,
-   pas tout le framework, pour rester légers. */
+/* Mini équivalents Bootstrap -- quelques classes Bootstrap (btn/
+   btn-outline-secondary/btn-sm/btn-close/me-1/text-muted) sont utilisées
+   dans le markup sans charger tout le framework : on ne réimplémente que
+   ces quelques classes, pour rester légers. */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -56,11 +51,8 @@ html, body {
 }
 .btn-close:hover { opacity: 0.75; }
 
-/* Variables scoped — n'écrase pas les variables Cockpittt. Palette alignée
-   hex pour hex sur celle de LeCockpittt (app/static/css/style.css) : accent =
-   --color-menthe/--color-menthe-dark, bg/border/text/text-muted = mêmes
-   teintes Slate -- Oracle tourne dans un iframe same-origin sur ce fond, un
-   écart de charte se voyait immédiatement à la jonction. */
+/* Variables scoped — n'écrase pas les variables globales de la page hôte
+   si Oracle est intégré ailleurs. */
 .oracle-scope {
     --accent: #3fb494;
     --accent-dark: #2f8b72;
@@ -413,51 +405,6 @@ html, body {
 .btn-delete-doc svg { width: 14px; height: 14px; }
 .btn-delete-doc:hover { border-color: #b91c1c; background: #fee2e2; }
 
-/* ---- Base de données Cockpittt (synchro Mongo -> RAG, cf. mongo-sync-btn) ---- */
-#mongo-sync-list {
-    margin-top: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.mongo-sync-row {
-    font-size: 12.5px;
-    padding: 6px 10px;
-    border-radius: 6px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    cursor: pointer;
-}
-
-.mongo-sync-row-main {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.mongo-sync-row-date {
-    flex-shrink: 0;
-    color: var(--text-muted);
-    font-size: 11px;
-}
-
-.mongo-sync-full {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin: 10px 0;
-    cursor: pointer;
-}
-
-#mongo-sync-btn { margin-bottom: 4px; }
-
 /* ---- ÉCRAN D'ACCUEIL ---- */
 .oracle-welcome {
     display: none;  /* caché par défaut */
@@ -684,18 +631,6 @@ a.source-chip:hover {
     border-color: var(--accent);
     background: var(--accent-light);
     color: var(--accent-dark);
-}
-
-/* Badge de provenance pour les sources issues de la synchro Mongo
-   (companies/contacts/ticket_transaction) -- pas un lien vers un fichier
-   consultable, juste un indicateur de provenance : distingué visuellement
-   des chips-fichiers pour ne pas laisser croire qu'il y a quelque chose à
-   cliquer dessus. */
-.source-chip--cockpittt {
-    background: var(--accent-light);
-    border-color: var(--accent);
-    color: var(--accent-dark);
-    cursor: default;
 }
 
 /* Debug retrieval -- réservé aux admins (cf. window.ORACLE_IS_ADMIN dans
@@ -1127,8 +1062,7 @@ a.source-chip:hover {
 .oracle-messages::-webkit-scrollbar-track { background: transparent; }
 .oracle-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* ---- TOAST (remplace showToast() de base.js LeCockpittt, absent ici --
-   page autonome) ---- */
+/* ---- TOAST ---- */
 .oracle-toast-container {
     position: fixed;
     bottom: 18px;

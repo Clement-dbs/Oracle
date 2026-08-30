@@ -1,12 +1,11 @@
 """Gestion des conversations persistées en Redis.
 
 Chaque conversation = un session_id (UUID), rattaché à un owner (identifiant
-utilisateur stable transmis par LeCockpittt via le header X-Oracle-User-Id,
-cf. _trust_headers() côté LeCockpittt -- distinct de X-Oracle-Username, qui
-porte le prénom affiché et n'est jamais garanti unique). owner="" (header
-absent, accès direct/dev sans LeCockpittt devant) : tout le monde partage un
-espace "anonyme" unique -- comportement historique d'avant ce fix,
-volontairement conservé pour ce cas d'usage.
+utilisateur stable, cf. _get_owner() dans app/ragchain/routes.py -- lu depuis
+un header optionnel posé par un éventuel reverse-proxy en amont, distinct du
+nom affiché qui n'est jamais garanti unique). owner="" (header absent, usage
+direct/dev sans reverse-proxy) : tout le monde partage un espace "anonyme"
+unique -- comportement par défaut d'Oracle en app standalone.
 
 Structure Redis :
   - ``conversations:{owner}``     sorted set  {session_id: timestamp_last_activity}

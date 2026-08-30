@@ -48,10 +48,6 @@ services:
       - ./embeddings_models:/app/embeddings_models
       - ./main.py:/app/main.py
       - ./factory.py:/app/factory.py
-      - oracle_secret_dev:/app/secrets
-    networks:
-      - default
-      - cockpit-network
     restart: unless-stopped
 
 volumes:
@@ -61,10 +57,3 @@ volumes:
     name: oracle_redis_data_dev
   minio_data:
     name: oracle_minio_data_dev
-  oracle_secret_dev:
-    name: oracle_oracle_secret_dev
-
-networks:
-  cockpit-network:
-    external: true
-    name: lecockpittt_cockpit-network

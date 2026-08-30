@@ -8,14 +8,9 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app.cockpittt.routes import cockpittt_router
 from app.core.health import check_health
 from app.core.rag_settings import get_rag_settings
-from app.google.oauth import oauth_router
-from app.google.routes import google_router
-from app.google.services.drive import GoogleAuthRequired
 from app.ingestion.routes import ingestion_router
-from app.json_parser.routes import parser_router
 from app.ragchain.routes import ragchain_router
 from app.settings.routes import settings_router
 
@@ -78,25 +73,9 @@ def create_app() -> FastAPI:
     )
 
     # Enregistrer les routes
-    app.include_router(oauth_router)
     app.include_router(ingestion_router)
-    app.include_router(cockpittt_router)
-    app.include_router(parser_router)
     app.include_router(ragchain_router)
-    app.include_router(google_router)
     app.include_router(settings_router)
-
-    # Quand les credentials Google sont absents ou expirés → 401 avec l'URL de reconnexion
-    @app.exception_handler(GoogleAuthRequired)
-    async def google_auth_required_handler(request: Request, exc: GoogleAuthRequired):
-        return JSONResponse(
-            status_code=401,
-            content={
-                "error": "google_auth_required",
-                "message": str(exc),
-                "auth_url": "/auth/google",
-            },
-        )
 
     app.mount(
         "/static",
@@ -110,12 +89,6 @@ def create_app() -> FastAPI:
 
     @app.get("/oracle/")
     async def frontend(request: Request):
-        from app.core.settings_store import get_setting
-
-        # Pas de credentials enregistrés → flow OAuth Google
-        if not get_setting("google_credentials"):
-            return RedirectResponse(url="/auth/google")
-
         api_base = request.headers.get("x-oracle-api-base", "")
         static_base = request.headers.get("x-oracle-static-base", "/static")
 
@@ -132,23 +105,10 @@ def create_app() -> FastAPI:
     @app.get("/session-info")
     async def session_info(request: Request):
         """Appelé par le front au chargement pour connaître les droits de
-        l'utilisateur courant.)."""
-        is_admin_header = request.headers.get("x-oracle-is-admin")
-        proxied = is_admin_header is not None
+        l'utilisateur courant. Oracle est une app standalone (pas de
+        reverse-proxy en amont qui pose ses propres droits) : accès complet
+        par défaut."""
         max_history_turns = get_rag_settings()["max_history_turns"]
-
-        if proxied:
-            can_upload = request.headers.get("x-oracle-can-upload") == "1"
-            raw_categories = request.headers.get("x-oracle-allowed-categories", "")
-            allowed_categories = [c for c in raw_categories.split(",") if c]
-            return {
-                "is_admin": is_admin_header == "1",
-                "can_upload": can_upload,
-                "allowed_categories": allowed_categories,
-                "username": request.headers.get("x-oracle-username", ""),
-                "csrf_token": request.headers.get("x-oracle-csrf-token", ""),
-                "max_history_turns": max_history_turns,
-            }
 
         return {
             "is_admin": True,

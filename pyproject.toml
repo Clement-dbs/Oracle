@@ -39,20 +39,16 @@ dependencies = [
     "langchain-text-splitters==1.1.2",
     "redis==8.0.1",
     "minio==7.2.20",
-    "google-api-python-client==2.198.0",
-    "google-auth==2.55.1",
-    "google-auth-httplib2==0.4.0",
     "liteparse==2.11.0",
     "python-dotenv==1.2.2",
     "pydantic==2.13.4",
     "pydantic-settings==2.14.2",
     "requests==2.34.2",
-    "cryptography==49.0.0",
 ]
 
 # =============================================================================
-# Dépendances dev (PEP 735) -- lint/tests + script ponctuel regenerate_token.py,
-# jamais nécessaires pour servir l'app en prod.
+# Dépendances dev (PEP 735) -- lint/tests uniquement, jamais nécessaires
+# pour servir l'app en prod.
 # =============================================================================
 [dependency-groups]
 dev = [
@@ -70,9 +66,6 @@ dev = [
     "python-pptx==1.0.2",
     "openpyxl==3.1.5",
     "pillow==12.3.0",
-    # regenerate_token.py : script d'admin ponctuel (régénère un refresh
-    # token Google à la main), jamais lancé par le serveur.
-    "google-auth-oauthlib==1.4.0",
 ]
 
 [tool.ruff]

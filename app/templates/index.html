@@ -109,21 +109,6 @@
                         </div>
                         <div id="upload-status-list"></div>
 
-                        <!-- Base de données Cockpittt : synchro Mongo -> RAG, table par table
-                             (cf. app.cockpittt.mongo_sync côté Oracle). -->
-                        <div class="indexed-docs-header">
-                            <span>Base de données (Cockpittt)</span>
-                        </div>
-                        <p class="oracle-settings-help">Ingère les fiches entreprises, contacts et opportunités CRM de Cockpittt dans la base documentaire d'Oracle.</p>
-                        <div id="mongo-sync-list"></div>
-                        <label class="mongo-sync-full">
-                            <input type="checkbox" id="mongo-sync-full-checkbox">
-                            Resynchronisation complète (ignore la dernière synchro connue)
-                        </label>
-                        <button class="btn btn-outline-secondary btn-sm" id="mongo-sync-btn">
-                            <i class="bi bi-arrow-repeat me-1"></i> Ingérer la sélection
-                        </button>
-
                         <div class="indexed-docs-header">
                             <span>Documents indexés</span>
                             <button class="btn-text-link" id="refresh-docs-btn">Actualiser</button>
@@ -188,8 +173,9 @@
 </div>
 
 <script>
-    // api_base : "" en accès direct (dev/test), "/oracle/api" quand cette
-    // page est reverse-proxyée par LeCockpittt (cf. factory.py::frontend()).
+    // api_base : "" en accès direct (dev/test), personnalisable via le
+    // header x-oracle-api-base si Oracle est servi derrière un reverse-proxy
+    // (cf. factory.py::frontend()).
     window.ORACLE_API_BASE = "{{ api_base }}";
 </script>
 <script src="{{ static_base }}/script.js?v={{ static_version }}"></script>

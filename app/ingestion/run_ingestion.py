@@ -74,8 +74,8 @@ def process_document(
 
     `pages` : pages déjà extraites, au même format que
     `extract.extract_via_liteparse()` (`[{"page", "text", "method"}, ...]`) --
-    permet d'indexer un texte déjà en clair (ex : fiche CRM reformatée par
-    app.cockpittt.mongo_sync) sans repasser par `extract_document()`, qui ne
+    permet d'indexer un texte déjà en clair (ex : contenu reformaté en amont
+    par l'appelant) sans repasser par `extract_document()`, qui ne
     gère que les formats binaires listés dans `SUPPORTED_EXTENSIONS` et
     rejetterait par exemple un `filename` en `.txt` -- alors qu'il n'y a
     justement rien à « extraire » d'un texte déjà en clair.

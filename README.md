@@ -56,7 +56,7 @@ Le README reste volontairement court. La référence technique complète vit dan
 
 | Où | Quoi |
 |---|---|
-| [`CLAUDE.md`](CLAUDE.md) | **Référence technique** : architecture, stockage (Qdrant/Redis/MinIO), intégrations LeCockpittt/Google, conventions, sécurité, dépendances |
+| [`CLAUDE.md`](CLAUDE.md) | **Référence technique** : architecture, stockage (Qdrant/Redis/MinIO), conventions, sécurité, dépendances |
 
 ## Déploiement
 

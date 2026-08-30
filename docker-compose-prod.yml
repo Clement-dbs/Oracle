@@ -50,10 +50,8 @@ services:
       - minio
     volumes:
       - embeddings_models_prod:/app/embeddings_models
-      - oracle_secret_prod:/app/secrets
     networks:
       - internal
-      - cockpit-network
     restart: unless-stopped
 
 volumes:
@@ -65,8 +63,6 @@ volumes:
     name: oracle_minio_data
   embeddings_models_prod:
     name: oracle_embeddings_models_prod
-  oracle_secret_prod:
-    name: oracle_oracle_secret_prod
 
 networks:
   internal:
@@ -74,6 +70,3 @@ networks:
     internal: true
   minio-console:
     driver: bridge
-  cockpit-network:
-    external: true
-    name: lecockpittt_cockpit-network

@@ -341,9 +341,10 @@ def generate_stream_answer(
     attachment_filename: str | None = None,
     attachment_text: str | None = None,
 ) -> Generator[str]:
-    """allowed_categories/is_admin viennent des droits de l'utilisateur côté
-    LeCockpittt (Oracle n'a pas son propre système de droits). is_admin=False
-    par défaut : le panneau de debug retrieval n'est jamais transmis sinon.
+    """allowed_categories/is_admin viennent des droits de l'utilisateur
+    (Oracle n'a pas son propre système de comptes -- standalone, toujours
+    admin par défaut, cf. /session-info). is_admin=False par défaut ici :
+    le panneau de debug retrieval n'est jamais transmis sinon.
 
     attachment_filename/attachment_text : pièce jointe éphémère injectée telle
     quelle dans le prompt, sans passer par retrieve()/rerank()."""

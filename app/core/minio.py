@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 # ── Préfixes MinIO ───────────────────────────────────────────────────────
 PREFIX_INGESTION = "ingestion/"
-PREFIX_JSON = "json_output/"
 # Préfixe distinct de PREFIX_INGESTION : /documents/reindex ne scanne que
 # "ingestion/" et ne doit jamais reprendre un fichier parsed/ pour un
 # document à réindexer.
@@ -43,11 +42,6 @@ def ensure_bucket():
 
 def category_path(category: str, filename: str) -> str:
     return f"{PREFIX_INGESTION}{category}/{filename}"
-
-
-def json_output_path(filename: str) -> str:
-    """json_output/<filename>"""
-    return f"{PREFIX_JSON}{filename}"
 
 
 def parsed_path(object_name: str) -> str:
@@ -82,11 +76,6 @@ def upload_bytes(
         raise RuntimeError(f"Erreur upload bytes '{object_name}': {e}") from e
 
 
-def upload_json_output(data: bytes, filename: str) -> str:
-    """Upload un JSON Bifrosttt → json_output/<filename>"""
-    return upload_bytes(data, json_output_path(filename), content_type="application/json")
-
-
 # ── Download ─────────────────────────────────────────────────────────────
 
 
@@ -97,11 +86,6 @@ def object_exists(object_name: str) -> bool:
         return True
     except S3Error:
         return False
-
-
-def json_output_exists_by_stem(stem: str) -> bool:
-    """Vérifie si json_output/<stem>.json existe dans MinIO."""
-    return object_exists(f"{PREFIX_JSON}{stem}.json")
 
 
 def download_bytes(object_name: str) -> bytes:
