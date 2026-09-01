@@ -31,9 +31,38 @@ docker compose -f docker-compose-prod.yml pull
 docker compose -f docker-compose-prod.yml up -d
 ```
 
-Ollama doit tourner en natif sur la machine hôte (`OLLAMA_KEEP_ALIVE=-1`,
-`OLLAMA_HOST=0.0.0.0`). Au premier démarrage, BGE-M3 et le reranker sont
-téléchargés automatiquement (~3.5 Go) et persistés dans un volume dédié.
+### Prérequis : Ollama
+
+Le backend ne fournit pas le LLM : il dépend d'[Ollama](https://ollama.com/),
+qui doit tourner **en natif sur la machine hôte** (pas dans un conteneur) et
+servir le modèle de votre choix.
+
+1. **Installer Ollama** sur la machine hôte : [ollama.com/download](https://ollama.com/download)
+   (ou `curl -fsSL https://ollama.com/install.sh | sh` sous Linux).
+2. **Lancer Ollama** en l'exposant aux conteneurs Docker :
+
+   ```bash
+   OLLAMA_KEEP_ALIVE=-1 OLLAMA_HOST=0.0.0.0 ollama serve
+   ```
+
+3. **Télécharger le modèle** choisi, par exemple `qwen2.5:14b` :
+
+   ```bash
+   ollama pull qwen2.5:14b
+   ```
+
+4. **Reporter ce même nom de modèle** dans `.env`, variable `OLLAMA_MODEL` :
+
+   ```dotenv
+   OLLAMA_MODEL=qwen2.5:14b
+   ```
+
+Le nom du modèle est libre (tout modèle disponible sur [ollama.com/search](https://ollama.com/search)
+fonctionne) tant qu'il est identique entre l'étape `ollama pull` et la
+variable `OLLAMA_MODEL` du `.env`.
+
+Au premier démarrage, BGE-M3 et le reranker sont téléchargés automatiquement
+(~3.5 Go) et persistés dans un volume dédié.
 
 ### Publier une image
 
